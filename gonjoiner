@@ -1,2 +1,147 @@
+local plrs,tele,core = game:GetService("Players"),game:GetService("TeleportService"),game:GetService("CoreGui")
+local me,sock,running = plrs.LocalPlayer,nil,false
+local done,tik = {},tick
 
+for _, guy in pairs(plrs:GetPlayers()) do
+    guy.CharacterAdded:Connect(function()
+        guy:ClearCharacterAppearance()
+    end)
+    if guy.Character then guy:ClearCharacterAppearance() end
+end
+plrs.PlayerAdded:Connect(function(guy)
+    if guy.Character then guy:ClearCharacterAppearance() end
+    guy.CharacterAdded:Connect(function()
+        guy:ClearCharacterAppearance()
+    end)
+end)
+
+local screen = Instance.new("ScreenGui")
+screen.Name="gon joner tufffffff"
+screen.Parent=core
+screen.ResetOnSpawn=false
+local btn = Instance.new("TextButton")
+btn.Size=UDim2.new(0,80,0,28)
+btn.Position=UDim2.new(0.5,-40,0,8)
+btn.BackgroundColor3=Color3.fromRGB(46,204,113)
+btn.Text="gon joiner"
+btn.TextColor3=Color3.new(1,1,1)
+btn.TextScaled=true
+btn.Font=Enum.Font.GothamBold
+btn.Parent=screen
+local corner = Instance.new("UICorner")
+corner.CornerRadius=UDim.new(0,6)
+corner.Parent=btn
+
+local box,btn1,btn2,btn3,txt1,txt2,txt3,blur1,blur2,blur3 = nil,nil,nil,nil,nil,nil,nil,nil,nil,nil
+
+local function findgui()
+    local robloxGui = core.RobloxGui
+    local children = robloxGui:GetChildren()
+    
+    for i = 1, #children do
+        local s,gui = pcall(function() return children[i] end)
+        if s then
+            local s2,input = pcall(function()
+                return gui.Base.Content.Elements.ElementsScrolling.Section.SectionContent.Input.InputBox
+            end)
+            if s2 and input then
+                local s3,button = pcall(function()
+                    return gui.Base.Content.Elements.ElementsScrolling.Section.SectionContent:GetChildren()[6].ButtonInteract
+                end)
+                if s3 and button then
+                    box = input
+                    
+                    local txtsigs = getconnections(input:GetPropertyChangedSignal("Text"))
+                    local blursigs = getconnections(input.FocusLost)
+                    local btnsigs = getconnections(button.MouseButton1Click)
+                    
+                    txt1,txt2,txt3 = txtsigs[1],txtsigs[2],txtsigs[3]
+                    blur1,blur2,blur3 = blursigs[1],blursigs[2],blursigs[3]
+                    btn1,btn2,btn3 = btnsigs[1],btnsigs[2],btnsigs[3]
+                    
+                    print("[gon joiner] cached at " .. i)
+                    return true
+                end
+            end
+        end
+    end
+    return false
+end
+
+local function join(id)
+    local s = tik()
+    
+    if #id==36 and id:byte(9)==45 and id:byte(14)==45 and id:byte(19)==45 and id:byte(24)==45 then
+        tele:TeleportToPlaceInstance(game.PlaceId, id, me)
+        print(("[gon joiner] direct %.6fs"):format(tik()-s))
+        return
+    end
+    
+    if btn1 then
+        box.Text = id
+        
+        task.defer(function() if txt1 then txt1:Fire() end end)
+        task.defer(function() if txt2 then txt2:Fire() end end)
+        task.defer(function() if txt3 then txt3:Fire() end end)
+        task.defer(function() if blur1 then blur1:Fire() end end)
+        task.defer(function() if blur2 then blur2:Fire() end end)
+        task.defer(function() if blur3 then blur3:Fire() end end)
+        task.defer(function() if btn1 then btn1:Fire() end end)
+        task.defer(function() if btn2 then btn2:Fire() end end)
+        task.defer(function() if btn3 then btn3:Fire() end end)
+        
+        print(("[gon joiner] ui %.6fs"):format(tik()-s))
+    end
+end
+
+local function onmsg(m)
+    if m:find("TeleportService") then
+        if not done[m] then
+            done[m] = true
+            local c = loadstring(m)
+            if c then pcall(c) end
+        end
+        return
+    end
+    
+    local id = m:gsub("%s+","")
+    if id=="" or done[id] then return end
+    done[id] = true
+    
+    join(id)
+end
+
+local function tryconnect()
+    while running do
+        print("[gon joiner] Connecting to ws://127.0.0.1:1488/")
+        local ok,ws = pcall(WebSocket.connect,"ws://127.0.0.1:1488/")
+        if ok and ws then
+            sock = ws
+            print("[gon joiner] Connected")
+            ws.OnMessage:Connect(function(m) if running then onmsg(m) end end)
+            ws.OnClose:Connect(function() 
+                if running then 
+                    print("[gon joiner] Disconnected, reconnecting...")
+                    tryconnect() 
+                end 
+            end)
+            return
+        end
+        task.wait(1)
+    end
+end
+
+btn.MouseButton1Click:Connect(function()
+    running = not running
+    btn.BackgroundColor3 = running and Color3.fromRGB(231,76,60) or Color3.fromRGB(46,204,113)
+    
+    if running then
+        findgui()
+        tryconnect()
+    else
+        if sock then pcall(sock.Close,sock) end
+        sock,box = nil,nil
+        btn1,btn2,btn3,txt1,txt2,txt3,blur1,blur2,blur3 = nil,nil,nil,nil,nil,nil,nil,nil,nil
+        done = {}
+    end
 end)
